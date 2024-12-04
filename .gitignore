@@ -23,3 +23,20 @@ go.work.sum
 
 # env file
 .env
+
+# macOS
+.DS_Store
+
+# Colby
+.local
+**/.local
+
+.env.*
+!.env.example
+!.env.sample
+
+*.pem
+
+tmp
+
+__debug_bin*
