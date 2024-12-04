@@ -11,7 +11,7 @@ var (
 
 // Session returns the session Context object from a
 // http.Request Context.
-func Session(ctx context.Context) *SessionContext {
+func GetSession(ctx context.Context) *SessionContext {
 	val, _ := ctx.Value(SessionCtxKey).(*SessionContext)
 	return val
 }
