@@ -7,14 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/colbylwilliams/copilot-go"
-	"github.com/colbylwilliams/copilot-go/_examples/azure_openai/agent"
-	"github.com/colbylwilliams/copilot-go/_examples/azure_openai/auth"
+	"github.com/colbylwilliams/copilot-go/_examples/events/agent"
+	"github.com/colbylwilliams/copilot-go/_examples/events/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/azure"
 )
 
 const (
@@ -54,24 +51,7 @@ func realMain() error {
 		return fmt.Errorf("failed to create payload authenticator: %w", err)
 	}
 
-	// ensure the azure config is set
-	if cfg.Azure == nil {
-		return errors.New("azure config is nil")
-	}
-
-	// create the azure credential
-	azureCredential, err := azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{TenantID: cfg.Azure.TenantID})
-	if err != nil {
-		return err
-	}
-
-	// create the openai client
-	oai := openai.NewClient(
-		azure.WithEndpoint(cfg.Azure.OpenAIEndpoint, cfg.Azure.OpenAIAPIVersion),
-		azure.WithTokenCredential(azureCredential),
-	)
-
-	myagent := agent.NewAgent(cfg, oai)
+	myagent := agent.NewAgent(cfg)
 
 	// create the router
 	router := chi.NewRouter()

@@ -2,7 +2,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "azure openai",
+            "name": "events",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}${/}_examples${/}events",
+            "program": "_examples${/}events${/}main.go",
+        },
+        {
+            "name": "copilot-api",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}${/}_examples${/}copilot_api",
+            "program": "_examples${/}copilot_api${/}main.go",
+        },
+        {
+            "name": "azure-openai",
             "type": "go",
             "request": "launch",
             "mode": "auto",

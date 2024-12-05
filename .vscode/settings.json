@@ -4,6 +4,7 @@
         "azidentity",
         "copilotctx",
         "Datas",
+        "Errorf",
         "godotenv",
         "golangci",
         "goparsec",
@@ -13,6 +14,7 @@
         "maintidx",
         "myagent",
         "prataprc",
+        "Println",
         "sseparser"
     ]
 }
