@@ -4,44 +4,28 @@ import (
 	"errors"
 	"os"
 
+	"github.com/colbylwilliams/copilot-go/azure"
 	"github.com/joho/godotenv"
 )
 
 const (
-	// azure
-	AzureOpenAIAPIVersionDefault string = "2024-07-01-preview" //"2024-06-01"
-	// chat
 	OpenAIChatModelDefault string = "gpt-4o"
 )
 
 const (
-	// azure
-	AzureTenantIDKey         string = "AZURE_TENANT_ID"
-	AzureOpenAIAPIKey        string = "AZURE_OPENAI_API_KEY"
-	AzureOpenAIEndpointKey   string = "AZURE_OPENAI_ENDPOINT"
-	AzureOpenAIAPIVersionKey string = "OPENAI_API_VERSION"
-	// github
 	GitHubAppClientIDKey       string = "GITHUB_APP_CLIENT_ID"
 	GitHubAppClientSecretKey   string = "GITHUB_APP_CLIENT_SECRET"
 	GitHubAppPrivateKeyPathKey string = "GITHUB_APP_PRIVATE_KEY_PATH"
 	GitHubAppWebhookSecretKey  string = "GITHUB_APP_WEBHOOK_SECRET"
 	GitHubAppFQDNKey           string = "GITHUB_APP_FQDN"
 	GitHubAppUserAgentKey      string = "GITHUB_APP_USER_AGENT"
-	// chat
-	OpenAIChatModelKey string = "OPENAI_CHAT_MODEL"
+	OpenAIChatModelKey         string = "OPENAI_CHAT_MODEL"
 )
 
 // Config represents the configuration of the app.
 type Config struct {
-	Environment string
-	HTTPPort    string
-
-	// azure
-	AzureTenantID         string
-	AzureOpenAIEndpoint   string
-	AzureOpenAIAPIVersion string
-
-	// github
+	Environment             string
+	HTTPPort                string
 	GitHubAppFQDN           string
 	GitHubAppClientID       string
 	GitHubAppClientSecret   string
@@ -49,9 +33,8 @@ type Config struct {
 	GitHubAppPrivateKey     []byte
 	GitHubAppWebhookSecret  string
 	GitHubAppUserAgent      string
-
-	// chat
-	ChatModel string
+	ChatModel               string
+	Azure                   *azure.Config
 }
 
 // LoadConfig reads the environment variables and returns a new Config.
@@ -65,14 +48,7 @@ func LoadConfig(env ...string) (*Config, error) {
 	cfg := &Config{}
 
 	cfg.Environment = getEnvOrDefault("ENVIRONMENT", "development")
-
 	cfg.HTTPPort = getEnvOrDefault("PORT", "")
-
-	// azure
-	cfg.AzureTenantID = getRequiredEnv(AzureTenantIDKey)
-	cfg.AzureOpenAIEndpoint = getRequiredEnv(AzureOpenAIEndpointKey)
-
-	cfg.AzureOpenAIAPIVersion = getEnvOrDefault(AzureOpenAIAPIVersionKey, AzureOpenAIAPIVersionDefault)
 
 	// github
 	cfg.GitHubAppClientID = getRequiredEnv(GitHubAppClientIDKey)
@@ -89,6 +65,9 @@ func LoadConfig(env ...string) (*Config, error) {
 
 	// chat
 	cfg.ChatModel = getEnvOrDefault(OpenAIChatModelKey, OpenAIChatModelDefault)
+
+	// azure
+	cfg.Azure = azure.LoadConfig()
 
 	return cfg, nil
 }
