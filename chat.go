@@ -1,5 +1,7 @@
 package copilot
 
+import "github.com/colbylwilliams/copilot-go/jsonschema"
+
 type ChatRole string
 
 const (
@@ -31,23 +33,47 @@ type Message struct {
 	Name          string                `json:"name,omitempty"`
 	References    []*Reference          `json:"copilot_references"`
 	Confirmations []*ClientConfirmation `json:"copilot_confirmations"`
-	FunctionCall  *FunctionCall         `json:"functionCall,omitempty"`
-	ToolCalls     []*ToolCall           `json:"toolCalls,omitempty"`
-	ToolCallID    string                `json:"toolCallID,omitempty"`
+	FunctionCall  *ToolFunctionCall     `json:"function_call,omitempty"`
+	ToolCalls     []*ToolCall           `json:"tool_calls,omitempty"`
+	ToolCallID    string                `json:"tool_call_id,omitempty"`
+}
+
+type ToolCall struct {
+	ID       string            `json:"id"`
+	Type     string            `json:"type" default:"function"`
+	Function *ToolFunctionCall `json:"function"`
+	// Index    int
+}
+
+type ToolFunctionCall struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
+}
+
+type ToolFunctionDefinition struct {
+	Name        string                `json:"name"`
+	Description string                `json:"description,omitempty"`
+	Parameters  jsonschema.Definition `json:"parameters"`
 }
 
 // Response is the response from the agent.
 type Response struct {
-	ID                string        `json:"id"`
-	Created           int64         `json:"created"`
-	Object            string        `json:"object" default:"chat.completion.chunk"`
-	Model             string        `json:"model"`
+	ID                string        `json:"id,omitempty"`
+	Created           int64         `json:"created,omitempty"`
+	Object            string        `json:"object,omitempty" default:"chat.completion.chunk"`
+	Model             string        `json:"model,omitempty"`
 	SystemFingerprint string        `json:"system_fingerprint,omitempty"`
 	Choices           []ChatChoice  `json:"choices"`
 	References        []*Reference  `json:"copilot_references,omitempty"`
 	Confirmation      *Confirmation `json:"copilot_confirmation,omitempty"`
 	Errors            []*Error      `json:"copilot_errors,omitempty"`
 }
+
+const (
+	ChatFinishReasonStop         string = "stop"
+	ChatFinishReasonToolCalls    string = "tool_calls"
+	ChatFinishReasonFunctionCall string = "function_call"
+)
 
 type ChatChoice struct {
 	Index        int64           `json:"index"`
@@ -65,16 +91,4 @@ type ChatChoiceDelta struct {
 type ChatChoiceDeltaFunctionCall struct {
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
-}
-
-type FunctionCall struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
-}
-
-type ToolCall struct {
-	ID       string
-	Type     string
-	Function *FunctionCall
-	Index    int
 }

@@ -5,13 +5,19 @@ import (
 	"errors"
 )
 
-// Confirmation represents a confirmation that
-// the agent has sent to the user.
+// Confirmation represents a confirmation that the agent has sent to the user.
 type Confirmation struct {
-	Type         string `json:"type"`
-	Title        string `json:"title"`
-	Message      string `json:"message"`
-	Confirmation any    `json:"confirmation"`
+	// Type is a string that specifies the confirmation's type.
+	// Currently, action is the only supported value for type.
+	Type ConfirmationType `json:"type" default:"action"`
+	// Title is the title of the confirmation dialog shown to the user.
+	Title string `json:"title"`
+	// Message is the message of the confirmation dialog shown to the user.
+	Message string `json:"message"`
+	// Confirmation an optional field for the agent to include any data needed
+	// to uniquely identify this confirmation and take action once the decision
+	// is received from the client.
+	Confirmation any `json:"confirmation"`
 }
 
 var (
@@ -40,8 +46,7 @@ func (c ConfirmationType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.name)
 }
 
-// ClientConfirmation represents a confirmation
-// that the user has accepted or dismissed.
+// ClientConfirmation represents a confirmation that the user has accepted or dismissed.
 type ClientConfirmation struct {
 	State        ClientConfirmationState `json:"state"`
 	Confirmation any                     `json:"confirmation"`

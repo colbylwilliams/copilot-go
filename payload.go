@@ -15,12 +15,6 @@ import (
 	"strings"
 )
 
-const (
-	SseEventNameConfirmation string = "copilot_confirmation"
-	SseEventNameReferences   string = "copilot_references"
-	SseEventNameErrors       string = "copilot_errors"
-)
-
 // PayloadVerifier is for verifying a payload using ECDSA to ensure it's from GitHub.
 type PayloadVerifier interface {
 	Verify(body []byte, sig string) (bool, error)
