@@ -2,6 +2,8 @@
 
 copilot-go is a Go library for GitHub Copilot extensions.
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/colbylwilliams/copilot-go.svg)](https://pkg.go.dev/github.com/colbylwilliams/copilot-go)
+
 ## Installing
 
 copilot-go is compatible with modern Go releases in module mode, with Go installed:
