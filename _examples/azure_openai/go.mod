@@ -1,11 +1,10 @@
-module azure_openai
+module github.com/colbylwilliams/copilot-go/_examples/azure_openai
 
 go 1.23.1
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
-	github.com/colbylwilliams/copilot-go v0.0.0-00010101000000-000000000000
-	github.com/colbylwilliams/copilot-go/_examples/azure_openai v0.0.0-00010101000000-000000000000
+	github.com/colbylwilliams/copilot-go v1.0.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/google/go-github/v67 v67.0.0
 	github.com/google/uuid v1.6.0
