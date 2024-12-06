@@ -1,3 +1,10 @@
+// Package copilot provides the types and functions for authoring [GitHub Copilot Extensions].
+//
+// Use this package to build GitHub Copilot [agents] and [skillsets].
+//
+// [GitHub Copilot Extensions]: https://github.com/features/copilot/extensions
+// [skillsets]: https://docs.github.com/copilot/building-copilot-extensions/building-a-copilot-agent-for-your-copilot-extension/about-copilot-agents
+// [agents]: https://docs.github.com/copilot/building-copilot-extensions/building-a-copilot-agent-for-your-copilot-extension/about-copilot-agents
 package copilot
 
 import "github.com/colbylwilliams/copilot-go/jsonschema"

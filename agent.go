@@ -42,7 +42,10 @@ func AgentHandler(v PayloadVerifier, a Agent) http.HandlerFunc {
 			return
 		}
 
+		ctx := r.Context()
+
 		token := getRequiredHeader(r, GitHubTokenHeader)
+		ctx = AddGetHubToken(ctx, token)
 
 		var req Request
 		if err := json.Unmarshal(b, &req); err != nil {
@@ -51,12 +54,12 @@ func AgentHandler(v PayloadVerifier, a Agent) http.HandlerFunc {
 			return
 		}
 
-		session, err := req.GetSessionContext()
+		session, err := req.GetSessionInfo()
 		if err != nil {
 			fmt.Println("error getting session context: ", err)
 		}
 
-		ctx := AddSession(r.Context(), session)
+		ctx = AddSessionInfo(ctx, session)
 
 		if err := a.Execute(ctx, token, &req, w); err != nil {
 			fmt.Printf("failed to execute agent: %v\n", err)

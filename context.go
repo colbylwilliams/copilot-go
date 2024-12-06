@@ -4,21 +4,33 @@ import (
 	"context"
 )
 
-var (
-	// SessionCtxKey is the context.Context key to store the request context.
-	SessionCtxKey = &contextKey{"SessionContext"}
-)
-
-// Session returns the session Context object from a
-// http.Request Context.
-func GetSession(ctx context.Context) *SessionContext {
-	val, _ := ctx.Value(SessionCtxKey).(*SessionContext)
+// GetSessionInfo returns the SessionInfo object from the context.
+func GetSessionInfo(ctx context.Context) *SessionInfo {
+	val, _ := ctx.Value(SessionCtxKey).(*SessionInfo)
 	return val
 }
 
-func AddSession(ctx context.Context, data *SessionContext) context.Context {
+// AddSessionInfo adds the SessionInfo object to the context.
+func AddSessionInfo(ctx context.Context, data *SessionInfo) context.Context {
 	return context.WithValue(ctx, SessionCtxKey, data)
 }
+
+// GetSessionInfo returns the SessionInfo object from the context.
+func GetGetHubToken(ctx context.Context) string {
+	val, _ := ctx.Value(GithubTokenCtxKey).(string)
+	return val
+}
+
+// AddSessionInfo adds the SessionInfo object to the context.
+func AddGetHubToken(ctx context.Context, data string) context.Context {
+	return context.WithValue(ctx, GithubTokenCtxKey, data)
+}
+
+var (
+	// SessionCtxKey is the context.Context key to store the session context.
+	SessionCtxKey     = &contextKey{"SessionInfo"}
+	GithubTokenCtxKey = &contextKey{"GithubToken"}
+)
 
 // contextKey is a value for use with context.WithValue. It's used as
 // a pointer so it fits in an interface{} without allocation. This technique

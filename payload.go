@@ -85,9 +85,6 @@ func parsePubKey(pubKey string) (*ecdsa.PublicKey, error) {
 	return ecdsaKey, nil
 }
 
-// fetchPublicKey fetches the keys used to sign messages from copilot.
-// Checking the signature with one of these keys verifies that the request
-// came from GitHub and not elsewhere on the internet.
 func fetchPublicKey() (*ecdsa.PublicKey, error) {
 	resp, err := http.Get("https://api.github.com/meta/public_keys/copilot_api")
 	if err != nil {

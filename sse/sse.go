@@ -1,9 +1,13 @@
+// Package sse provides utilities for Server-Sent Events (SSE) in the context
+// of the GitHub Copilot Extensions APIs.
 package sse
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/colbylwilliams/copilot-go"
 )
@@ -163,8 +167,81 @@ func WriteConfirmationAndFlush(w io.Writer, c *copilot.Confirmation) error {
 	return WriteDataAndFlush(w, c)
 }
 
-// WriteStop writes stop SSE data to the writer.
-func WriteStop(w io.Writer) error {
+// WriteDelta writes a custom message to the writer and flushes the writer.
+//
+// The id must match the id set in previous messages, and match the id used later
+// with WriteStop, otherwise some clients will drop the "stickiness" of your agent
+// and attribute the messages to copilot.
+//
+// IMPORTANT: You must call WriteStop/WriteStopAndFlush after the last message
+// to ensure the chat session is properly closed.
+func WriteDelta(ctx context.Context, w io.Writer, id string, delta string) error {
+	if err := WriteDeltaWithoutFlush(ctx, w, id, delta); err != nil {
+		return err
+	}
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+	return nil
+}
+
+// WriteDeltaWithoutFlush writes a custom message to the writer.
+//
+// The id must match the id set in previous messages, and match the id used later
+// with WriteStop, otherwise some clients will drop the "stickiness" of your agent
+// and attribute the messages to copilot.
+//
+// IMPORTANT: You must call WriteStop/WriteStopAndFlush after the last message
+// to ensure the chat session is properly closed.
+func WriteDeltaWithoutFlush(ctx context.Context, w io.Writer, id string, delta string) error {
+	resp := copilot.Response{
+		ID:      id,
+		Created: time.Now().UTC().Unix(),
+		Choices: []copilot.ChatChoice{{
+			Delta: copilot.ChatChoiceDelta{
+				Content: delta,
+				Role:    string(copilot.ChatRoleAssistant),
+			},
+		}},
+	}
+
+	if err := WriteData(w, resp); err != nil {
+		return err
+	}
+	return nil
+}
+
+// deprecated: use WriteStop instead
+func WriteStopAndFlush(w io.Writer, id string) error {
+	return WriteStop(w, id)
+}
+
+// WriteStop writes stop SSE data to the writer and flushes the writer.
+//
+// The id must match the id set in previous messages, specifically the id used
+// with WriteDeltaWithoutFlush, otherwise some clients will drop the "stickiness"
+// of your agent and attribute the messages to copilot.
+//
+// If you haven't set an id in previous messages, you can use an empty string.
+func WriteStop(w io.Writer, id string) error {
+	if err := WriteStopWithoutFlush(w, id); err != nil {
+		return err
+	}
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+	return nil
+}
+
+// WriteStopWithoutFlush writes stop SSE data to the writer.
+//
+// The id must match the id set in previous messages, specifically the id used
+// with WriteDeltaWithoutFlush, otherwise some clients will drop the "stickiness"
+// of your agent and attribute the messages to copilot.
+//
+// If you haven't set an id in previous messages, you can use an empty string.
+
+func WriteStopWithoutFlush(w io.Writer, id string) error {
 	stop := copilot.Response{
 		Choices: []copilot.ChatChoice{{
 			FinishReason: copilot.ChatFinishReasonStop,
@@ -174,17 +251,6 @@ func WriteStop(w io.Writer) error {
 		return err
 	}
 	WriteDone(w)
-	return nil
-}
-
-// WriteStopAndFlush writes stop SSE data to the writer and flushes the writer.
-func WriteStopAndFlush(w io.Writer) error {
-	if err := WriteStop(w); err != nil {
-		return err
-	}
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	}
 	return nil
 }
 

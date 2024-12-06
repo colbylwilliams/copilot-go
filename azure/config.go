@@ -1,3 +1,4 @@
+// Package azure provides helpful types and functions for use with Azure OpenAI.
 package azure
 
 import "os"

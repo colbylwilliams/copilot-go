@@ -1,3 +1,7 @@
+// Package jsonschema provides a simple way to describe JSON Schemas.
+//
+// This package is not meant to be a full-featured JSON Schema library.
+// It is meant to be a simple way to describe JSON Schemas for use this packages.
 package jsonschema
 
 import "encoding/json"
@@ -29,7 +33,6 @@ const (
 )
 
 // Definition is a struct for describing a JSON Schema.
-// It is fairly limited, and you may have better luck using a third-party library.
 type Definition struct {
 	// Type specifies the data type of the schema.
 	Type DataType `json:"type,omitempty"`

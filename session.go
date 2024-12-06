@@ -8,25 +8,9 @@ import (
 	"strings"
 )
 
-type RepoItemRefType struct {
-	Singular string
-	Plural   string
-}
-
-var (
-	RepoItemRefTypeIssue = RepoItemRefType{"issue", "issues"}
-	RepoItemRefTypePull  = RepoItemRefType{"pull", "pulls"}
-)
-
-var (
-	RepoRe  = regexp.MustCompile(`https://github.com/(?:orgs/)?(?P<owner>[^/]+)/(?P<repo>[^/]+)?(?P<path>(?:/(?:[^/#]+))+)?(?:#(?P<hash>.+))?`)
-	IssueRe = regexp.MustCompile(`https://github.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/issues/(?P<number>\d+)(?:#(?P<hash>.+))?`)
-	PullRe  = regexp.MustCompile(`https://github.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/pull/(?P<number>\d+)(?:/(?P<page>commits|checks|files))?(?:#(?P<hash>.+))?`)
-)
-
-// SessionContext represents the context of the chat session
-// based on the copilot references in the chat messages
-type SessionContext struct {
+// SessionInfo represents the context of the chat session based on the copilot
+// references in the chat messages
+type SessionInfo struct {
 	URL         *ReferenceDataGitHubCurrentUrl `json:"url,omitempty"`
 	Issue       *Issue                         `json:"issue,omitempty"`
 	PullRequest *PullRequest                   `json:"pull_request,omitempty"`
@@ -34,43 +18,21 @@ type SessionContext struct {
 	Agent       *ReferenceDataGitHubAgent      `json:"agent,omitempty"`
 }
 
-// repoItemRef represents a reference to a github
-// issue or pull request
-type repoItemRef struct {
-	Type   RepoItemRefType `json:"type"`
-	Owner  string          `json:"owner"`
-	Repo   string          `json:"repo"`
-	Number int             `json:"number"`
-	Page   string          `json:"page,omitempty"`
-	Hash   string          `json:"hash,omitempty"`
-	URL    string          `json:"url"`
-	API    string          `json:"api"`
-}
-
-type Issue struct {
-	repoItemRef
-}
-
-type PullRequest struct {
-	repoItemRef
-}
-
-// IsSession returns true if the message has the
-// role of "user" and the name of "_session"
-func (msg *Message) IsSession() bool {
+// IsSessionMessage returns true if the message has the role of "user" and
+// the name of "_session"
+func (msg *Message) IsSessionMessage() bool {
 	return msg.Name == "_session"
 }
 
-// GetSession returns the message with the role of "user"
-// and the name of "_session" which is the message that the
-// github.com chat interface sends to communicate the current
-// url and other context of the chat session
-func (req *Request) GetSession() *Message {
+// GetSessionMessage returns the message with the role of "user" and the name of
+// "_session" which is the message that the github.com chat interface sends to
+// communicate the current url and other context of the chat session
+func (req *Request) GetSessionMessage() *Message {
 	// iterate over the messages in reverse order
 	for i := len(req.Messages) - 1; i >= 0; i-- {
 		msg := req.Messages[i]
 		if msg.Role == ChatRoleUser {
-			if msg.IsSession() {
+			if msg.IsSessionMessage() {
 				return msg
 			}
 		}
@@ -78,11 +40,10 @@ func (req *Request) GetSession() *Message {
 	return nil
 }
 
-// GetSessionContext returns the context of the chat session,
-// including the current url, the relevant repository, agent details,
-// and the associated issue or pull request if the current url is a
-// valid issue or pull request url
-func (req *Request) GetSessionContext() (*SessionContext, error) {
+// GetSessionInfo returns the context of the chat session, including the
+// current url, the relevant repository, agent details, and the associated issue
+// or pull request if the current url is a valid issue or pull request url
+func (req *Request) GetSessionInfo() (*SessionInfo, error) {
 	// iterate over the messages in reverse order
 	// var session *Message
 	var url *ReferenceDataGitHubCurrentUrl
@@ -96,11 +57,11 @@ func (req *Request) GetSessionContext() (*SessionContext, error) {
 		switch msg.Role {
 		case ChatRoleUser:
 			// resolve the session url context
-			if msg.IsSession() {
+			if msg.IsSessionMessage() {
 				// session = msg
-				if urlData := GetCurrentURLData(msg); urlData != nil {
+				if urlData := cetCurrentURLData(msg); urlData != nil {
 					url = urlData
-					if itemRefData, err := ResolveRepoItemRef(url.URL); err == nil {
+					if itemRefData, err := resolveRepoItemRef(url.URL); err == nil {
 						item = itemRefData
 					}
 				}
@@ -160,7 +121,7 @@ func (req *Request) GetSessionContext() (*SessionContext, error) {
 		// from the user, so we'll create one with the agent login
 		agent = &ReferenceDataGitHubAgent{
 			Login: req.Agent,
-			Type:  ReferenceDataTypeGitHubAgent,
+			Type:  string(ReferenceTypeGitHubAgent),
 			URL:   fmt.Sprintf("https://github.com/apps/%s", req.Agent),
 		}
 	}
@@ -190,7 +151,7 @@ func (req *Request) GetSessionContext() (*SessionContext, error) {
 		}
 	}
 
-	c := &SessionContext{
+	c := &SessionInfo{
 		// Item:  item,
 		URL:   url,
 		Repo:  repo,
@@ -209,11 +170,11 @@ func (req *Request) GetSessionContext() (*SessionContext, error) {
 	return c, nil
 }
 
-// GetCurrentURLData returns the current url reference data from the _session message
-func GetCurrentURLData(msg *Message) *ReferenceDataGitHubCurrentUrl {
+// cetCurrentURLData returns the current url reference data from the _session message
+func cetCurrentURLData(msg *Message) *ReferenceDataGitHubCurrentUrl {
 	// we only care about the current url reference
 	// on the _session message that dotcom sends
-	if !msg.IsSession() {
+	if !msg.IsSessionMessage() {
 		return nil
 	}
 
@@ -225,7 +186,7 @@ func GetCurrentURLData(msg *Message) *ReferenceDataGitHubCurrentUrl {
 			return d
 		case *ReferenceDataGitHubRedacted:
 			// the current URL reference may be redacted
-			if d.Type == ReferenceDataTypeGitHubCurrentUrl {
+			if d.Type == ReferenceTypeGitHubCurrentUrl {
 				fmt.Println("warning: current URL reference is redacted")
 				return nil
 			}
@@ -235,18 +196,18 @@ func GetCurrentURLData(msg *Message) *ReferenceDataGitHubCurrentUrl {
 	return nil
 }
 
-// ResolveRepoItemRef resolves the owner, repo, and number
-// from a github issue or pull request url
-func ResolveRepoItemRef(url string) (*repoItemRef, error) {
+// resolveRepoItemRef resolves the owner, repo, and number from a github issue
+// or pull request url
+func resolveRepoItemRef(url string) (*repoItemRef, error) {
 	var i = &repoItemRef{}
 	var re *regexp.Regexp
 	var matches []string
 
-	if matches = IssueRe.FindStringSubmatch(url); matches != nil {
-		re = IssueRe
+	if matches = issueRe.FindStringSubmatch(url); matches != nil {
+		re = issueRe
 		i.Type = RepoItemRefTypeIssue
-	} else if matches = PullRe.FindStringSubmatch(url); matches != nil {
-		re = PullRe
+	} else if matches = pullRe.FindStringSubmatch(url); matches != nil {
+		re = pullRe
 		i.Type = RepoItemRefTypePull
 	} else {
 		return nil, nil
@@ -294,6 +255,43 @@ func ResolveRepoItemRef(url string) (*repoItemRef, error) {
 
 	return i, nil
 }
+
+// repoItemRef represents a reference to a github issue or pull request
+type repoItemRef struct {
+	Type   RepoItemRefType `json:"type"`
+	Owner  string          `json:"owner"`
+	Repo   string          `json:"repo"`
+	Number int             `json:"number"`
+	Page   string          `json:"page,omitempty"`
+	Hash   string          `json:"hash,omitempty"`
+	URL    string          `json:"url"`
+	API    string          `json:"api"`
+}
+
+// Issue represents a github issue
+type Issue struct {
+	repoItemRef
+}
+
+// PullRequest represents a github pull request
+type PullRequest struct {
+	repoItemRef
+}
+
+var (
+	issueRe = regexp.MustCompile(`https://github.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/issues/(?P<number>\d+)(?:#(?P<hash>.+))?`)
+	pullRe  = regexp.MustCompile(`https://github.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/pull/(?P<number>\d+)(?:/(?P<page>commits|checks|files))?(?:#(?P<hash>.+))?`)
+)
+
+type RepoItemRefType struct {
+	Singular string
+	Plural   string
+}
+
+var (
+	RepoItemRefTypeIssue = RepoItemRefType{"issue", "issues"}
+	RepoItemRefTypePull  = RepoItemRefType{"pull", "pulls"}
+)
 
 func (t *RepoItemRefType) UnmarshalJSON(data []byte) error {
 	var singular string

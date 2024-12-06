@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// CopilotModel represents the model to use for completions.
 type CopilotModel string
 
 const (
@@ -18,6 +19,7 @@ const (
 	CopilotModelEmbeddings CopilotModel = "text-embedding-ada-002"
 )
 
+// CompletionsRequest is a request to the Copilot API to get completions.
 type CompletionsRequest struct {
 	Model    CopilotModel       `json:"model" default:"gpt-4o"`
 	Messages []*Message         `json:"messages"`
@@ -25,6 +27,7 @@ type CompletionsRequest struct {
 	Stream   bool               `json:"stream"`
 }
 
+// CompletionsTool represents a tool to use for completions.
 type CompletionsTool struct {
 	Type     string                 `json:"type" default:"function"`
 	Function ToolFunctionDefinition `json:"function"`
@@ -32,11 +35,14 @@ type CompletionsTool struct {
 
 const endpoint = "https://api.githubcopilot.com/chat/completions"
 
+// ChatCompletionsStream is a convenience function that sets the Stream field to true
+// and calls ChatCompletions.
 func ChatCompletionsStream(ctx context.Context, token string, r CompletionsRequest, w io.Writer) (io.ReadCloser, error) {
 	r.Stream = true
 	return ChatCompletions(ctx, token, r, w)
 }
 
+// ChatCompletions sends a request to the the Copilot API to get completions.
 func ChatCompletions(ctx context.Context, token string, r CompletionsRequest, w io.Writer) (io.ReadCloser, error) {
 
 	b, err := json.Marshal(r)

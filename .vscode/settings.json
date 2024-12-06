@@ -5,16 +5,21 @@
         "copilotctx",
         "Datas",
         "Errorf",
+        "ghauth",
+        "githubauth",
         "godotenv",
         "golangci",
         "goparsec",
         "GOPATH",
         "jclem",
+        "jferrl",
         "joho",
         "maintidx",
         "myagent",
+        "ngrok",
         "prataprc",
         "Println",
+        "skillsets",
         "sseparser"
     ]
 }

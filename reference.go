@@ -2,26 +2,36 @@ package copilot
 
 import (
 	"encoding/json"
+	"regexp"
 )
 
-const (
-	ReferenceTypeGitHubRedacted   ReferenceType = "github.redacted"
-	ReferenceTypeGitHubAgent      ReferenceType = "github.agent"
-	ReferenceTypeGitHubCurrentUrl ReferenceType = "github.current-url"
-	ReferenceTypeGitHubFile       ReferenceType = "github.file"
-	ReferenceTypeGitHubRepository ReferenceType = "github.repository"
-	ReferenceTypeGitHubSnippet    ReferenceType = "github.snippet"
-	ReferenceTypeClientFile       ReferenceType = "client.file"
-	ReferenceTypeClientSelection  ReferenceType = "client.selection"
-)
-
+// ReferenceType is the type of copilot_reference.
 type ReferenceType string
 
-// Reference copilot reference in chat messages
+const (
+	// ReferenceTypeGitHubRedacted is another reference that has been redacted.
+	ReferenceTypeGitHubRedacted ReferenceType = "github.redacted"
+	// ReferenceTypeGitHubAgent is a GitHub Copilot agent.
+	ReferenceTypeGitHubAgent ReferenceType = "github.agent"
+	// ReferenceTypeGitHubCurrentUrl is the current URL of the user.
+	ReferenceTypeGitHubCurrentUrl ReferenceType = "github.current-url"
+	// ReferenceTypeGitHubFile is a file in a GitHub repository.
+	ReferenceTypeGitHubFile ReferenceType = "github.file"
+	// ReferenceTypeGitHubRepository is a GitHub repository.
+	ReferenceTypeGitHubRepository ReferenceType = "github.repository"
+	// ReferenceTypeGitHubSnippet is a code snippet from a file in a GitHub repository.
+	ReferenceTypeGitHubSnippet ReferenceType = "github.snippet"
+	// ReferenceTypeClientFile is a file from a client like vscode.
+	ReferenceTypeClientFile ReferenceType = "client.file"
+	// ReferenceTypeClientSelection is a selection in a file from a client like vscode.
+	ReferenceTypeClientSelection ReferenceType = "client.selection"
+)
+
+// Reference is a copilot_reference in chat messages
 type Reference struct {
-	// Type is the type of reference.
+	// Type is the type of the copilot references.
 	Type ReferenceType `json:"type"`
-	// ID is the unique identifier of the reference.
+	// ID is the unique identifier of the copilot references.
 	ID string `json:"id"`
 	// IsImplicit specifies if the reference was passed implicitly or explicitly.
 	IsImplicit bool `json:"is_implicit"`
@@ -29,13 +39,13 @@ type Reference struct {
 	// If any of the Metadata required fields are missing, the reference will
 	// not be rendered in the UI.
 	Metadata ReferenceMetadata `json:"metadata"`
-	// Data that is specific to the reference.
+	// Data that is specific to the copilot references.
 	Data    ReferenceData   `json:"-"`
 	RawData json.RawMessage `json:"data"`
 }
 
-// ReferenceMetadata contains metadata about a reference to display in the
-// user's environment. If any of the required fields are missing, the reference
+// ReferenceMetadata contains metadata about a copilot_reference to display in
+// the user's environment. If any of the required fields are missing, the reference
 // will not be rendered in the UI.
 type ReferenceMetadata struct {
 	DisplayName string `json:"display_name"`
@@ -43,64 +53,57 @@ type ReferenceMetadata struct {
 	DisplayURL  string `json:"display_url"`
 }
 
+// ReferenceData is the data that is specific to the copilot_reference type.
 type ReferenceData interface{}
 
-type ReferenceDataType string
-
-const (
-	ReferenceDataTypeGitHubRedacted   ReferenceDataType = "github.redacted"
-	ReferenceDataTypeGitHubAgent      ReferenceDataType = "github.agent"
-	ReferenceDataTypeGitHubCurrentUrl ReferenceDataType = "github.current-url"
-	ReferenceDataTypeGitHubFile       ReferenceDataType = "file"
-	ReferenceDataTypeGitHubRepository ReferenceDataType = "repository"
-	ReferenceDataTypeGitHubSnippet    ReferenceDataType = "snippet"
-	ReferenceDataTypeClientFile       ReferenceDataType = "client.file"
-	ReferenceDataTypeClientSelection  ReferenceDataType = "client.selection"
-)
-
+// ReferenceDataOther contains information about a copilot_reference that is not
+// included in the well-known types.
 type ReferenceDataOther struct {
-	Type ReferenceDataType `json:"type"`
+	Type string `json:"type"`
 }
 
-// ReferenceDataGitHubRedacted is a redacted copilot reference
+// ReferenceDataGitHubRedacted contains information about a redacted copilot_reference.
+// Included on copilot references of type: "github.redacted"
 type ReferenceDataGitHubRedacted struct {
-	Type ReferenceDataType `json:"type"` // "github.redacted"
+	// Type is the type of the copilot references that was redacted.
+	Type ReferenceType `json:"type"`
 }
 
-// ReferenceDataGitHubAgent is a reference to a copilot agent
+// ReferenceDataGitHubAgent contains information about a GitHub Copilot agent.
+// Included on copilot references of type: "github.agent"
 type ReferenceDataGitHubAgent struct {
-	AvatarURL string            `json:"avatarURL"`
-	ID        int64             `json:"id"`
-	Login     string            `json:"login"`
-	Type      ReferenceDataType `json:"type"` // "github.agent"
-	URL       string            `json:"url"`
+	AvatarURL string `json:"avatarURL"`
+	ID        int64  `json:"id"`
+	Login     string `json:"login"`
+	Type      string `json:"type" default:"github.agent"`
+	URL       string `json:"url"`
 }
 
-// ReferenceDataGitHubCurrentUrl is the current URL from a _session message
+// ReferenceDataGitHubCurrentUrl contains information about the users current URL.
+// Included on copilot references of type: "github.current-url"
+//
+// Note: this is a special copilot_reference that only seems to be present in a
+// message with role: "user" and name: "_session"
+//
+// Only the URL field is sent by the client, the rest of the fields are extracted
+// during unmarshaling.
+//
+// "github.current-url" is ONLY sent by the github.com (web) chat client.
 type ReferenceDataGitHubCurrentUrl struct {
-	Type  ReferenceDataType `json:"type"` // "github.current-url" (hardcoded)
-	URL   string            `json:"url"`
-	Owner string            `json:"owner"`
-	Repo  string            `json:"repo"`
-	Path  string            `json:"path,omitempty"`
-	Hash  string            `json:"hash,omitempty"`
+	URL   string `json:"url"`
+	Owner string `json:"owner"`
+	Repo  string `json:"repo"`
+	Path  string `json:"path,omitempty"`
+	Hash  string `json:"hash,omitempty"`
 }
 
-// ReferenceDataGitHubFile is a reference to a file on github.com
-type ReferenceDataGitHubFile struct {
-	CommitOID    string            `json:"commitOID"`
-	LanguageID   int64             `json:"languageID"`
-	LanguageName string            `json:"languageName"`
-	Path         string            `json:"path"`
-	Ref          string            `json:"ref"`
-	RepoID       int64             `json:"repoID"`
-	RepoName     string            `json:"repoName"`
-	RepoOwner    string            `json:"repoOwner"`
-	Type         ReferenceDataType `json:"type"` // "file"
-	URL          string            `json:"url"`
-}
-
-// ReferenceDataGitHubRepository is a reference to a repository on github.com
+// ReferenceDataGitHubRepository contains information about a github repository.
+// Included on copilot references of type: "github.repository"
+//
+// Note: fields set by different clients vary, and are not guaranteed to be present.
+// ID, OwnerLogin, Name, and Type do seem to be present across clients.
+//
+// "github.repository" is sent by the vscode and github.com (web) chat clients.
 type ReferenceDataGitHubRepository struct {
 	CommitOID   string                                   `json:"commitOID"`
 	Description string                                   `json:"description"`
@@ -112,7 +115,7 @@ type ReferenceDataGitHubRepository struct {
 	ReadmePath  string                                   `json:"readmePath"`
 	Ref         string                                   `json:"ref"`
 	RefInfo     ReferenceDataGitHubRepositoryRefInfo     `json:"refInfo"`
-	Type        ReferenceDataType                        `json:"type"` // "repository"
+	Type        string                                   `json:"type" default:"repository"`
 	Visibility  string                                   `json:"visibility"`
 }
 type ReferenceDataGitHubRepositoryLanguage struct {
@@ -124,7 +127,28 @@ type ReferenceDataGitHubRepositoryRefInfo struct {
 	Type string `json:"type"`
 }
 
-// ReferenceDataGitHubSnippet is a reference to a snippet on github.com
+// ReferenceDataGitHubFile contains information about a file in a github repository.
+// Included on copilot references of type: "github.file"
+//
+// "github.file" is ONLY sent by github.com (web) chat client.
+type ReferenceDataGitHubFile struct {
+	CommitOID    string `json:"commitOID"`
+	LanguageID   int64  `json:"languageID"`
+	LanguageName string `json:"languageName"`
+	Path         string `json:"path"`
+	Ref          string `json:"ref"`
+	RepoID       int64  `json:"repoID"`
+	RepoName     string `json:"repoName"`
+	RepoOwner    string `json:"repoOwner"`
+	Type         string `json:"type" default:"file"`
+	URL          string `json:"url"`
+}
+
+// ReferenceDataGitHubSnippet contains information about a code snippet from a
+// file in a github repository.
+// Included on copilot references of type: "github.snippet"
+//
+// "github.snippet" is ONLY sent by github.com (web) chat client.
 type ReferenceDataGitHubSnippet struct {
 	CommitOID    string                          `json:"commitOID"`
 	LanguageID   int64                           `json:"languageID"`
@@ -135,7 +159,7 @@ type ReferenceDataGitHubSnippet struct {
 	RepoID       int64                           `json:"repoID"`
 	RepoName     string                          `json:"repoName"`
 	RepoOwner    string                          `json:"repoOwner"`
-	Type         ReferenceDataType               `json:"type"` // "snippet"
+	Type         string                          `json:"type" default:"snippet"`
 	URL          string                          `json:"url"`
 }
 type ReferenceDataGitHubSnippetRange struct {
@@ -143,19 +167,23 @@ type ReferenceDataGitHubSnippetRange struct {
 	Start int32 `json:"start"`
 }
 
-// ReferenceDataClientFile is a reference to a file on a client (e.g. vscode)
+// ReferenceDataClientFile contains information about a specific file on a client.
+// Included on copilot references of type: "client.file"
+//
+// "client.file" is sent by the vscode chat client (and likely visual studio).
 type ReferenceDataClientFile struct {
-	Content  string            `json:"content"`
-	Language string            `json:"language"`
-	Type     ReferenceDataType `json:"type"` // "client.file" (hardcoded)
+	Content  string `json:"content"`
+	Language string `json:"language"`
 }
 
-// ReferenceDataClientSelection is a reference to a selection on a client (e.g. vscode)
+// ReferenceDataClientSelection contains information about a selection in a file.
+// Included on copilot references of type: "client.selection"
+//
+// "client.selection" is sent by the vscode chat client (and likely visual studio).
 type ReferenceDataClientSelection struct {
 	Content string                               `json:"content"`
 	End     ReferenceDataClientSelectionLocation `json:"end"`
 	Start   ReferenceDataClientSelectionLocation `json:"start"`
-	Type    ReferenceDataType                    `json:"type"` // "client.selection" (hardcoded)
 }
 type ReferenceDataClientSelectionLocation struct {
 	Col  int32 `json:"col"`
@@ -177,7 +205,7 @@ func (r *Reference) UnmarshalJSON(data []byte) error {
 	case ReferenceTypeGitHubAgent:
 		d = &ReferenceDataGitHubAgent{}
 	case ReferenceTypeGitHubCurrentUrl:
-		d = &ReferenceDataGitHubCurrentUrl{Type: ReferenceDataTypeGitHubCurrentUrl}
+		d = &ReferenceDataGitHubCurrentUrl{}
 	case ReferenceTypeGitHubFile:
 		d = &ReferenceDataGitHubFile{}
 	case ReferenceTypeGitHubRepository:
@@ -185,11 +213,11 @@ func (r *Reference) UnmarshalJSON(data []byte) error {
 	case ReferenceTypeGitHubSnippet:
 		d = &ReferenceDataGitHubSnippet{}
 	case ReferenceTypeClientFile:
-		d = &ReferenceDataClientFile{Type: ReferenceDataTypeClientFile}
+		d = &ReferenceDataClientFile{}
 	case ReferenceTypeClientSelection:
-		d = &ReferenceDataClientSelection{Type: ReferenceDataTypeClientSelection}
+		d = &ReferenceDataClientSelection{}
 	default:
-		d = &ReferenceDataOther{Type: ReferenceDataType(r.Type)}
+		d = &ReferenceDataOther{}
 	}
 
 	if err := json.Unmarshal(r.RawData, d); err != nil {
@@ -201,6 +229,8 @@ func (r *Reference) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+var repoRe = regexp.MustCompile(`https://github.com/(?:orgs/)?(?P<owner>[^/]+)/(?P<repo>[^/]+)?(?P<path>(?:/(?:[^/#]+))+)?(?:#(?P<hash>.+))?`)
+
 func (u *ReferenceDataGitHubCurrentUrl) UnmarshalJSON(data []byte) error {
 	type referenceDataGitHubCurrentUrl ReferenceDataGitHubCurrentUrl
 
@@ -208,17 +238,17 @@ func (u *ReferenceDataGitHubCurrentUrl) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if matches := RepoRe.FindStringSubmatch(u.URL); matches != nil {
-		if o := RepoRe.SubexpIndex("owner"); o > -1 {
+	if matches := repoRe.FindStringSubmatch(u.URL); matches != nil {
+		if o := repoRe.SubexpIndex("owner"); o > -1 {
 			u.Owner = matches[o]
 		}
-		if r := RepoRe.SubexpIndex("repo"); r > -1 {
+		if r := repoRe.SubexpIndex("repo"); r > -1 {
 			u.Repo = matches[r]
 		}
-		if p := RepoRe.SubexpIndex("path"); p > -1 {
+		if p := repoRe.SubexpIndex("path"); p > -1 {
 			u.Path = matches[p]
 		}
-		if h := RepoRe.SubexpIndex("hash"); h > -1 {
+		if h := repoRe.SubexpIndex("hash"); h > -1 {
 			u.Hash = matches[h]
 		}
 	}
