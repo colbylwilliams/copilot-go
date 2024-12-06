@@ -93,7 +93,7 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 			return err
 		}
 
-		sse.WriteDataAndFlush(w, chunk)
+		sse.WriteData(w, chunk)
 	}
 
 	if err := stream.Err(); err != nil {

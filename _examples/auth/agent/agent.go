@@ -37,7 +37,7 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 		}
 
 		// write the error to the stream
-		sse.WriteErrorAndFlush(w, copilotError)
+		sse.WriteError(w, copilotError)
 
 	case "confirmation":
 
@@ -49,7 +49,7 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 			// the user has confirmed the action
 			// TODO: print the outcome of the action
 
-			sse.WriteStopAndFlush(w, "")
+			sse.WriteStop(w, "")
 			return nil
 		} else {
 			confirmation := &copilot.Confirmation{
@@ -63,7 +63,7 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 			}
 
 			// write the confirmation to the stream
-			sse.WriteConfirmationAndFlush(w, confirmation)
+			sse.WriteConfirmation(w, confirmation)
 		}
 
 	case "reference":
@@ -80,10 +80,10 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 		}
 
 		// write the reference to the stream
-		sse.WriteReferenceAndFlush(w, reference)
+		sse.WriteReference(w, reference)
 	}
 
-	sse.WriteStopAndFlush(w, "")
+	sse.WriteStop(w, "")
 
 	return nil
 }

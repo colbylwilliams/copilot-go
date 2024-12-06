@@ -13,14 +13,10 @@ import (
 	gh "github.com/google/go-github/v67/github"
 )
 
-type MyAgent struct {
-	cfg *copilot.Config
-}
+type MyAgent struct{ cfg *copilot.Config }
 
 func NewAgent(cfg *copilot.Config) *MyAgent {
-	return &MyAgent{
-		cfg: cfg,
-	}
+	return &MyAgent{cfg: cfg}
 }
 
 func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Request, w http.ResponseWriter) error {
@@ -46,26 +42,26 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 		return fmt.Errorf("error getting app: %w", err)
 	}
 
-	sse.WriteDelta(ctx, w, reqId, "# App\n")
+	sse.WriteDelta(w, reqId, "# App\n")
 
-	sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-	sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-	sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| ID   | %d |\n", app.GetID()))
-	sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Name | %s |\n", app.GetName()))
-	sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Slug | %s |\n", app.GetSlug()))
-	sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Owner| %s |\n", app.GetOwner().GetLogin()))
+	sse.WriteDelta(w, reqId, "|  |  |\n")
+	sse.WriteDelta(w, reqId, "| --- | --- |\n")
+	sse.WriteDelta(w, reqId, fmt.Sprintf("| ID   | %d |\n", app.GetID()))
+	sse.WriteDelta(w, reqId, fmt.Sprintf("| Name | %s |\n", app.GetName()))
+	sse.WriteDelta(w, reqId, fmt.Sprintf("| Slug | %s |\n", app.GetSlug()))
+	sse.WriteDelta(w, reqId, fmt.Sprintf("| Owner| %s |\n", app.GetOwner().GetLogin()))
 
 	installs, _, err := appClient.Apps.ListInstallations(context.Background(), &gh.ListOptions{PerPage: 100})
 	if err != nil {
 		return fmt.Errorf("error listing installations: %w", err)
 	}
 
-	sse.WriteDelta(ctx, w, reqId, "#### Installations\n")
-	sse.WriteDelta(ctx, w, reqId, "| Login | ID |\n")
-	sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
+	sse.WriteDelta(w, reqId, "#### Installations\n")
+	sse.WriteDelta(w, reqId, "| Login | ID |\n")
+	sse.WriteDelta(w, reqId, "| --- | --- |\n")
 
 	for _, install := range installs {
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| %s | %d |\n", install.GetAccount().GetLogin(), install.GetID()))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| %s | %d |\n", install.GetAccount().GetLogin(), install.GetID()))
 	}
 
 	// The client is authenticated using the token provided by github when it called
@@ -79,11 +75,11 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 		return fmt.Errorf("error getting current user: %w", err)
 	}
 
-	sse.WriteDelta(ctx, w, reqId, "# User\n")
-	sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-	sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-	sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Login | %s |\n", me.GetLogin()))
-	sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Name  | %s |\n", me.GetName()))
+	sse.WriteDelta(w, reqId, "# User\n")
+	sse.WriteDelta(w, reqId, "|  |  |\n")
+	sse.WriteDelta(w, reqId, "| --- | --- |\n")
+	sse.WriteDelta(w, reqId, fmt.Sprintf("| Login | %s |\n", me.GetLogin()))
+	sse.WriteDelta(w, reqId, fmt.Sprintf("| Name  | %s |\n", me.GetName()))
 
 	// The session is populated by the copilot middleware and contains information
 	// about the current user's chat session, for example the relevant repository.
@@ -98,56 +94,56 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 		return errors.New("session not found in context")
 	}
 
-	sse.WriteDelta(ctx, w, reqId, "# Session\n")
+	sse.WriteDelta(w, reqId, "# Session\n")
 
 	if session.URL != nil {
-		sse.WriteDelta(ctx, w, reqId, "#### Current URL\n")
-		sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-		sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| URL   | %s |\n", session.URL.URL))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Owner | %s |\n", session.URL.Owner))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Repo  | %s |\n", session.URL.Repo))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Path  | %s |\n", session.URL.Path))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Hash  | %s |\n", session.URL.Hash))
+		sse.WriteDelta(w, reqId, "#### Current URL\n")
+		sse.WriteDelta(w, reqId, "|  |  |\n")
+		sse.WriteDelta(w, reqId, "| --- | --- |\n")
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| URL   | %s |\n", session.URL.URL))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Owner | %s |\n", session.URL.Owner))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Repo  | %s |\n", session.URL.Repo))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Path  | %s |\n", session.URL.Path))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Hash  | %s |\n", session.URL.Hash))
 	}
 
 	if session.Agent != nil {
-		sse.WriteDelta(ctx, w, reqId, "#### Agent\n")
-		sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-		sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| ID    | %d |\n", session.Agent.ID))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Login | %s |\n", session.Agent.Login))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| URL   | %s |\n", session.Agent.URL))
+		sse.WriteDelta(w, reqId, "#### Agent\n")
+		sse.WriteDelta(w, reqId, "|  |  |\n")
+		sse.WriteDelta(w, reqId, "| --- | --- |\n")
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| ID    | %d |\n", session.Agent.ID))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Login | %s |\n", session.Agent.Login))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| URL   | %s |\n", session.Agent.URL))
 	}
 
 	if session.Repo != nil {
-		sse.WriteDelta(ctx, w, reqId, "#### Repository\n")
-		sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-		sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| ID         | %d |\n", session.Repo.ID))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Name       | %s |\n", session.Repo.Name))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| OwnerLogin | %s |\n", session.Repo.OwnerLogin))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| OwnerType  | %s |\n", session.Repo.OwnerType))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Visibility | %s |\n", session.Repo.Visibility))
+		sse.WriteDelta(w, reqId, "#### Repository\n")
+		sse.WriteDelta(w, reqId, "|  |  |\n")
+		sse.WriteDelta(w, reqId, "| --- | --- |\n")
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| ID         | %d |\n", session.Repo.ID))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Name       | %s |\n", session.Repo.Name))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| OwnerLogin | %s |\n", session.Repo.OwnerLogin))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| OwnerType  | %s |\n", session.Repo.OwnerType))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Visibility | %s |\n", session.Repo.Visibility))
 	}
 
 	if session.Issue != nil {
-		sse.WriteDelta(ctx, w, reqId, "#### Issue\n")
-		sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-		sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Number | [#%d](%s) |\n", session.Issue.Number, session.Issue.URL))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Repo   | %s |\n", session.Issue.Repo))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Owner  | %s |\n", session.Issue.Owner))
+		sse.WriteDelta(w, reqId, "#### Issue\n")
+		sse.WriteDelta(w, reqId, "|  |  |\n")
+		sse.WriteDelta(w, reqId, "| --- | --- |\n")
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Number | [#%d](%s) |\n", session.Issue.Number, session.Issue.URL))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Repo   | %s |\n", session.Issue.Repo))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Owner  | %s |\n", session.Issue.Owner))
 	}
 
 	if session.PullRequest != nil {
-		sse.WriteDelta(ctx, w, reqId, "#### Pull Request\n")
-		sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-		sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Number | [#%d](%s) |\n", session.PullRequest.Number, session.PullRequest.URL))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Repo   | %s |\n", session.PullRequest.Repo))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Owner  | %s |\n", session.PullRequest.Owner))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Page   | %s |\n", session.PullRequest.Page))
+		sse.WriteDelta(w, reqId, "#### Pull Request\n")
+		sse.WriteDelta(w, reqId, "|  |  |\n")
+		sse.WriteDelta(w, reqId, "| --- | --- |\n")
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Number | [#%d](%s) |\n", session.PullRequest.Number, session.PullRequest.URL))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Repo   | %s |\n", session.PullRequest.Repo))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Owner  | %s |\n", session.PullRequest.Owner))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Page   | %s |\n", session.PullRequest.Page))
 	}
 
 	// if issue or pull request is present, use the github client to get the details
@@ -157,12 +153,12 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 			return fmt.Errorf("error getting issue: %w", err)
 		}
 
-		sse.WriteDelta(ctx, w, reqId, "# Issue\n")
-		sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-		sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Title | %s |\n", issue.GetTitle()))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Body  | %s |\n", issue.GetBody()))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| State | %s |\n", issue.GetState()))
+		sse.WriteDelta(w, reqId, "# Issue\n")
+		sse.WriteDelta(w, reqId, "|  |  |\n")
+		sse.WriteDelta(w, reqId, "| --- | --- |\n")
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Title | %s |\n", issue.GetTitle()))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Body  | %s |\n", issue.GetBody()))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| State | %s |\n", issue.GetState()))
 	}
 
 	if session.PullRequest != nil {
@@ -171,15 +167,15 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 			return fmt.Errorf("error getting pull request: %w", err)
 		}
 
-		sse.WriteDelta(ctx, w, reqId, "# Pull Request\n")
-		sse.WriteDelta(ctx, w, reqId, "|  |  |\n")
-		sse.WriteDelta(ctx, w, reqId, "| --- | --- |\n")
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Title | %s |\n", pr.GetTitle()))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| Body  | %s |\n", pr.GetBody()))
-		sse.WriteDelta(ctx, w, reqId, fmt.Sprintf("| State | %s |\n", pr.GetState()))
+		sse.WriteDelta(w, reqId, "# Pull Request\n")
+		sse.WriteDelta(w, reqId, "|  |  |\n")
+		sse.WriteDelta(w, reqId, "| --- | --- |\n")
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Title | %s |\n", pr.GetTitle()))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| Body  | %s |\n", pr.GetBody()))
+		sse.WriteDelta(w, reqId, fmt.Sprintf("| State | %s |\n", pr.GetState()))
 	}
 
-	sse.WriteStopAndFlush(w, reqId)
+	sse.WriteStop(w, reqId)
 
 	return nil
 }

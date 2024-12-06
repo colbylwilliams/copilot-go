@@ -1,5 +1,5 @@
-github.com/colbylwilliams/copilot-go v1.0.8 h1:WRQefJ0sH+K1wipcKOI9MpK0Yjk/OUmqyPdkejozMq0=
-github.com/colbylwilliams/copilot-go v1.0.8/go.mod h1:wi1w4NoPYKJq2Q6imhBwABk2JS2zw22wphYYhWVxETo=
+github.com/colbylwilliams/copilot-go v1.0.9 h1:W4xuDS2Gn/CoW5z7sMMd0xLxsp8DdpUf7AujlxMcqwM=
+github.com/colbylwilliams/copilot-go v1.0.9/go.mod h1:wi1w4NoPYKJq2Q6imhBwABk2JS2zw22wphYYhWVxETo=
 github.com/go-chi/chi/v5 v5.1.0 h1:acVI1TYaD+hhedDJ3r54HyA6sExp3HfXq7QWEEY/xMw=
 github.com/go-chi/chi/v5 v5.1.0/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=
