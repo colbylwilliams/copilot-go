@@ -2,6 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "github",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "cwd": "${workspaceFolder}${/}_examples${/}github",
+            "program": "_examples${/}github${/}main.go",
+        },
+        {
             "name": "auth",
             "type": "go",
             "request": "launch",

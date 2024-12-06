@@ -4,7 +4,7 @@ go 1.23.1
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
-	github.com/colbylwilliams/copilot-go v1.0.3
+	github.com/colbylwilliams/copilot-go v1.0.6
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/google/go-github/v67 v67.0.0
 	github.com/openai/openai-go v0.1.0-alpha.38
