@@ -68,8 +68,9 @@ type Config struct {
 }
 
 // LoadConfig reads the environment variables and returns a new Config.
-// env is a list of .env files to load. If none are provided,
-// it will default to loading .env in the current path.
+//
+// env is a list of .env files to load. If none are provided, it will default to
+// loading .env in the current path.
 func LoadConfig(env ...string) (*Config, error) {
 	// Load environment variables from .env files.
 	// Load doesn't really return an error, so we ignore it.

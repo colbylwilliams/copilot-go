@@ -56,7 +56,7 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 	for _, m := range req.Messages {
 		// for now, we won't send the _session message
 		// web (dotcom) chat sends us downstream to openai
-		if m.IsSession() {
+		if m.IsSessionMessage() {
 			continue
 		}
 

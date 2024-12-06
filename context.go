@@ -6,30 +6,30 @@ import (
 
 // GetSessionInfo returns the SessionInfo object from the context.
 func GetSessionInfo(ctx context.Context) *SessionInfo {
-	val, _ := ctx.Value(SessionCtxKey).(*SessionInfo)
+	val, _ := ctx.Value(sessionCtxKey).(*SessionInfo)
 	return val
 }
 
 // AddSessionInfo adds the SessionInfo object to the context.
 func AddSessionInfo(ctx context.Context, data *SessionInfo) context.Context {
-	return context.WithValue(ctx, SessionCtxKey, data)
+	return context.WithValue(ctx, sessionCtxKey, data)
 }
 
-// GetSessionInfo returns the SessionInfo object from the context.
+// GetGetHubToken returns the SessionInfo object from the context.
 func GetGetHubToken(ctx context.Context) string {
-	val, _ := ctx.Value(GithubTokenCtxKey).(string)
+	val, _ := ctx.Value(githubTokenCtxKey).(string)
 	return val
 }
 
-// AddSessionInfo adds the SessionInfo object to the context.
+// AddGetHubToken adds the SessionInfo object to the context.
 func AddGetHubToken(ctx context.Context, data string) context.Context {
-	return context.WithValue(ctx, GithubTokenCtxKey, data)
+	return context.WithValue(ctx, githubTokenCtxKey, data)
 }
 
 var (
-	// SessionCtxKey is the context.Context key to store the session context.
-	SessionCtxKey     = &contextKey{"SessionInfo"}
-	GithubTokenCtxKey = &contextKey{"GithubToken"}
+	// sessionCtxKey is the context.Context key to store the session context.
+	sessionCtxKey     = &contextKey{"SessionInfo"}
+	githubTokenCtxKey = &contextKey{"GithubToken"}
 )
 
 // contextKey is a value for use with context.WithValue. It's used as
