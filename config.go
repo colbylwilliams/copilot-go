@@ -67,14 +67,22 @@ type Config struct {
 	Azure *azure.Config
 }
 
-// LoadConfig reads the environment variables and returns a new Config.
+// LoadConfig reads the environment variables (optionally loading them first from
+// .env files using [godotenv]), and returns a new Config.
 //
-// env is a list of .env files to load. If none are provided, it will default to
-// loading .env in the current path.
+// env is the .env file(s) to load
+//   - If none are provided, it will default to loading .env in the current path.
+//   - If multiple are provided, they will be loaded in order, with later files
+//     overriding earlier ones.
+//   - To skip loading .env files with [godotenv], pass an empty string.
+//
+// [godotenv]: https://pkg.go.dev/github.com/joho/godotenv
 func LoadConfig(env ...string) (*Config, error) {
-	// Load environment variables from .env files.
-	// Load doesn't really return an error, so we ignore it.
-	_ = godotenv.Load(env...)
+
+	if skip := len(env) == 1 && env[0] == ""; !skip {
+		// Load environment variables from .env files.
+		_ = godotenv.Load(env...) // Load doesn't really return an error, so we ignore it.
+	}
 
 	cfg := &Config{}
 
@@ -89,15 +97,15 @@ func LoadConfig(env ...string) (*Config, error) {
 	}
 
 	cfg.GitHubAppClientID = getRequiredEnv(GitHubAppClientIDKey)
-	cfg.GitHubAppClientSecret = getRequiredEnv(GitHubAppClientSecretKey)
+	cfg.GitHubAppClientSecret = os.Getenv(GitHubAppClientSecretKey)
 	cfg.GitHubAppPrivateKeyPath = getRequiredEnv(GitHubAppPrivateKeyPathKey)
 
 	// TODO - allow for directly setting the private key with GITHUB_APP_PRIVATE_KEY
 	// Read key from pem file
 	cfg.GitHubAppPrivateKey = getGitHubPrivateKey(cfg.GitHubAppPrivateKeyPath)
 
-	cfg.GitHubAppUserAgent = getRequiredEnv(GitHubAppUserAgentKey)
-	cfg.GitHubAppWebhookSecret = getRequiredEnv(GitHubAppWebhookSecretKey)
+	cfg.GitHubAppUserAgent = os.Getenv(GitHubAppUserAgentKey)
+	cfg.GitHubAppWebhookSecret = os.Getenv(GitHubAppWebhookSecretKey)
 	cfg.GitHubAppFQDN = getRequiredEnv(GitHubAppFQDNKey)
 
 	// chat
@@ -109,12 +117,12 @@ func LoadConfig(env ...string) (*Config, error) {
 	return cfg, nil
 }
 
-// IsProduction returns true if the environment is production (or staging).
+// IsProduction reports whether the environment is production (or staging).
 func (cfg *Config) IsProduction() bool {
 	return !cfg.IsDevelopment()
 }
 
-// IsDevelopment returns true if the environment is development.
+// IsDevelopment reports whether the environment is development.
 func (cfg *Config) IsDevelopment() bool {
 	return cfg.Environment == "development"
 }

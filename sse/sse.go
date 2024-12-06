@@ -3,7 +3,6 @@
 package sse
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -13,158 +12,159 @@ import (
 )
 
 const (
-	SseEventNameConfirmation string = "copilot_confirmation"
-	SseEventNameReferences   string = "copilot_references"
-	SseEventNameErrors       string = "copilot_errors"
+	sseEventNameConfirmation string = "copilot_confirmation"
+	sseEventNameReferences   string = "copilot_references"
+	sseEventNameErrors       string = "copilot_errors"
 )
 
-// WriteDone writes a [DONE] SSE message to the writer.
-func WriteDone(w io.Writer) {
-	_, _ = w.Write([]byte("data: [DONE]\n\n"))
-}
-
-// WriteDone writes a [DONE] SSE message to the writer.
-func WriteDoneAndFlush(w io.Writer) {
-	_, _ = w.Write([]byte("data: [DONE]\n\n"))
+func flush(w io.Writer) {
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}
 }
 
-// WriteData writes a data SSE message to the writer.
+// WriteDone writes a [DONE] SSE message to the writer and flushes the writer.
+//
+// example output:
+//
+//	data: [DONE]
+func WriteDone(w io.Writer) {
+	_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	flush(w)
+}
+
+// WriteData writes a data SSE message to the writer and flushes the writer.
 func WriteData(w io.Writer, v any) error {
 	_, _ = w.Write([]byte("data: "))
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		return err
 	}
 	_, _ = w.Write([]byte("\n")) // Encode() adds one newline, so add only one more here.
+	flush(w)
 	return nil
 }
 
-// WriteDataAndFlush writes a data SSE message to the writer and flushes the writer.
-func WriteDataAndFlush(w io.Writer, v any) error {
-	if err := WriteData(w, v); err != nil {
-		return err
-	}
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	}
-	return nil
-}
-
-func WriteRawData(w io.Writer, raw string) error {
-	_, _ = w.Write([]byte("data: " + raw + "\n\n"))
-	return nil
-}
-
-// WriteEvent writes a data SSE event to the writer.
+// WriteEvent writes a data SSE event to the writer and flushes the writer.
+//
+// example output:
+//
+//	event: event-name
 func WriteEvent(w io.Writer, name string) error {
-	_, err := w.Write([]byte("event: " + name))
-	if err != nil {
+	if _, err := w.Write([]byte("event: " + name + "\n")); err != nil {
 		return err
 	}
-	_, err = w.Write([]byte("\n"))
-	if err != nil {
-		return err
-	}
+	flush(w)
 	return nil
 }
 
-// WriteEventAndFlush writes a data SSE message to the writer and flushes the writer.
-func WriteEventAndFlush(w io.Writer, name string) error {
-	if err := WriteEvent(w, name); err != nil {
+// WriteEvent writes a data SSE event and data to the writer and flushes the writer.
+//
+// example output:
+//
+//	event: event-name
+//	data: {"key": "value"}
+func WriteEventData(w io.Writer, name string, data any) error {
+	if _, err := w.Write([]byte("event: " + name + "\n")); err != nil {
 		return err
 	}
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	}
-	return nil
+	return WriteData(w, data)
 }
 
-// WriteErrors writes error SSE events to the writer.
+// WriteErrors writes error SSE events and data to the writer and flushes the writer.
+//
+// example output:
+//
+//	event: copilot_errors
+//	data: [{
+//		"type": "agent",
+//		"code": "my.error",
+//		"message": "Something failed",
+//		"identifier": "my/id"
+//	}]
 func WriteErrors(w io.Writer, errs []*copilot.Error) error {
 	if len(errs) == 0 {
 		return nil
 	}
-
-	if err := WriteEvent(w, SseEventNameErrors); err != nil {
-		return err
-	}
-	return WriteData(w, errs)
+	return WriteEventData(w, sseEventNameErrors, errs)
 }
 
-// WriteErrorsAndFlush writes error SSE events to the writer and flushes the writer.
-func WriteErrorsAndFlush(w io.Writer, errs []*copilot.Error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-
-	if err := WriteEvent(w, SseEventNameErrors); err != nil {
-		return err
-	}
-	return WriteDataAndFlush(w, errs)
-}
-
-// WriteError writes error SSE events to the writer.
+// WriteError writes error SSE events and data to the writer and flushes the writer.
+//
+// example output:
+//
+//	event: copilot_errors
+//	data: [{
+//		"type": "agent",
+//		"code": "my.error",
+//		"message": "Something failed",
+//		"identifier": "my/id"
+//	}]
 func WriteError(w io.Writer, errs *copilot.Error) error {
 	return WriteErrors(w, []*copilot.Error{errs})
 }
 
-// WriteErrorAndFlush writes error SSE events to the writer and flushes the writer.
-func WriteErrorAndFlush(w io.Writer, errs *copilot.Error) error {
-	return WriteErrorsAndFlush(w, []*copilot.Error{errs})
-}
-
-// WriteReferences writes reference SSE events to the writer.
+// WriteReferences writes reference SSE events and data to the writer and flushes the writer.
+//
+// example output:
+//
+//	event: copilot_references
+//	data: [{
+//		"type": "custom.reference",
+//		"id": "123",
+//		"is_implicit": false,
+//		"metadata": {
+//			"display_name": "My Ref",
+//			"display_icon": "",
+//			"display_url": ""
+//		},
+//		"data": {
+//			"key": "value"
+//		}
+//	}]
 func WriteReferences(w io.Writer, refs []*copilot.Reference) error {
 	if len(refs) == 0 {
 		return nil
 	}
-
-	if err := WriteEvent(w, SseEventNameReferences); err != nil {
-		return err
-	}
-	return WriteData(w, refs)
+	return WriteEventData(w, sseEventNameReferences, refs)
 }
 
-// WriteReferencesAndFlush writes reference SSE events to the writer and flushes the writer.
-func WriteReferencesAndFlush(w io.Writer, refs []*copilot.Reference) error {
-	if len(refs) == 0 {
-		return nil
-	}
-
-	if err := WriteEvent(w, SseEventNameReferences); err != nil {
-		return err
-	}
-	return WriteDataAndFlush(w, refs)
-}
-
-// WriteReference writes reference SSE events to the writer.
+// WriteReference writes reference SSE events and data to the writer and flushes the writer.
+//
+// example output:
+//
+//	event: copilot_references
+//	data: [{
+//		"type": "custom.reference",
+//		"id": "123",
+//		"is_implicit": false,
+//		"metadata": {
+//			"display_name": "My Ref",
+//			"display_icon": "",
+//			"display_url": ""
+//		},
+//		"data": {
+//			"key": "value"
+//		}
+//	}]
 func WriteReference(w io.Writer, ref *copilot.Reference) error {
 	return WriteReferences(w, []*copilot.Reference{ref})
 }
 
-// WriteReferenceAndFlush writes reference SSE events to the writer and flushes the writer.
-func WriteReferenceAndFlush(w io.Writer, ref *copilot.Reference) error {
-	return WriteReferencesAndFlush(w, []*copilot.Reference{ref})
-}
-
-// WriteConfirmation writes confirmation SSE events to the writer.
+// WriteConfirmation writes confirmation SSE events and data to the writer and flushes the writer.
+//
+// example output:
+//
+//	event: copilot_confirmation
+//	data: {
+//		"type": "action",
+//		"title": "Proceed?",
+//		"message": "You sure?",
+//		"confirmation": {
+//			"id": "id-123"
+//		}
+//	}
 func WriteConfirmation(w io.Writer, c *copilot.Confirmation) error {
-	if err := WriteEvent(w, SseEventNameConfirmation); err != nil {
-		return err
-	}
-
-	return WriteData(w, c)
-}
-
-// WriteConfirmationAndFlush writes confirmation SSE events to the writer and flushes the writer.
-func WriteConfirmationAndFlush(w io.Writer, c *copilot.Confirmation) error {
-	if err := WriteEvent(w, SseEventNameConfirmation); err != nil {
-		return err
-	}
-
-	return WriteDataAndFlush(w, c)
+	return WriteEventData(w, sseEventNameConfirmation, c)
 }
 
 // WriteDelta writes a custom message to the writer and flushes the writer.
@@ -173,28 +173,14 @@ func WriteConfirmationAndFlush(w io.Writer, c *copilot.Confirmation) error {
 // with WriteStop, otherwise some clients will drop the "stickiness" of your agent
 // and attribute the messages to copilot.
 //
-// IMPORTANT: You must call WriteStop/WriteStopAndFlush after the last message
-// to ensure the chat session is properly closed.
-func WriteDelta(ctx context.Context, w io.Writer, id string, delta string) error {
-	if err := WriteDeltaWithoutFlush(ctx, w, id, delta); err != nil {
-		return err
-	}
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	}
-	return nil
-}
-
-// WriteDeltaWithoutFlush writes a custom message to the writer.
+// IMPORTANT: You must call WriteStop after the last message to ensure the chat
+// session is properly closed.
 //
-// The id must match the id set in previous messages, and match the id used later
-// with WriteStop, otherwise some clients will drop the "stickiness" of your agent
-// and attribute the messages to copilot.
+// example output:
 //
-// IMPORTANT: You must call WriteStop/WriteStopAndFlush after the last message
-// to ensure the chat session is properly closed.
-func WriteDeltaWithoutFlush(ctx context.Context, w io.Writer, id string, delta string) error {
-	resp := copilot.Response{
+//	data: {"id": "123", "created": 1234567890, "choices": [{"delta": {"content": "Hello, world!", "role": "assistant"}}]}
+func WriteDelta(w io.Writer, id string, delta string) error {
+	return WriteData(w, copilot.Response{
 		ID:      id,
 		Created: time.Now().UTC().Unix(),
 		Choices: []copilot.ChatChoice{{
@@ -203,51 +189,27 @@ func WriteDeltaWithoutFlush(ctx context.Context, w io.Writer, id string, delta s
 				Role:    string(copilot.ChatRoleAssistant),
 			},
 		}},
-	}
-
-	if err := WriteData(w, resp); err != nil {
-		return err
-	}
-	return nil
-}
-
-// deprecated: use WriteStop instead
-func WriteStopAndFlush(w io.Writer, id string) error {
-	return WriteStop(w, id)
+	})
 }
 
 // WriteStop writes stop SSE data to the writer and flushes the writer.
 //
 // The id must match the id set in previous messages, specifically the id used
-// with WriteDeltaWithoutFlush, otherwise some clients will drop the "stickiness"
-// of your agent and attribute the messages to copilot.
+// with WriteDelta, otherwise some clients will drop the "stickiness" of your
+// agent and attribute the messages to copilot.
 //
 // If you haven't set an id in previous messages, you can use an empty string.
+//
+// example output:
+//
+//	data: {"id": "123", "choices": [{"finish_reason": "stop"}]}
+//	data: [DONE]
 func WriteStop(w io.Writer, id string) error {
-	if err := WriteStopWithoutFlush(w, id); err != nil {
-		return err
-	}
-	if f, ok := w.(http.Flusher); ok {
-		f.Flush()
-	}
-	return nil
-}
-
-// WriteStopWithoutFlush writes stop SSE data to the writer.
-//
-// The id must match the id set in previous messages, specifically the id used
-// with WriteDeltaWithoutFlush, otherwise some clients will drop the "stickiness"
-// of your agent and attribute the messages to copilot.
-//
-// If you haven't set an id in previous messages, you can use an empty string.
-
-func WriteStopWithoutFlush(w io.Writer, id string) error {
-	stop := copilot.Response{
+	if err := WriteData(w, copilot.Response{
 		Choices: []copilot.ChatChoice{{
 			FinishReason: copilot.ChatFinishReasonStop,
 		}},
-	}
-	if err := WriteData(w, stop); err != nil {
+	}); err != nil {
 		return err
 	}
 	WriteDone(w)
