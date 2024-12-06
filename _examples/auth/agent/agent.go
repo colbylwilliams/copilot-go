@@ -49,7 +49,7 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 			// the user has confirmed the action
 			// TODO: print the outcome of the action
 
-			sse.WriteStopAndFlush(w)
+			sse.WriteStopAndFlush(w, "")
 			return nil
 		} else {
 			confirmation := &copilot.Confirmation{
@@ -83,7 +83,7 @@ func (a *MyAgent) Execute(ctx context.Context, token string, req *copilot.Reques
 		sse.WriteReferenceAndFlush(w, reference)
 	}
 
-	sse.WriteStopAndFlush(w)
+	sse.WriteStopAndFlush(w, "")
 
 	return nil
 }
