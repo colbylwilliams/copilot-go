@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/colbylwilliams/copilot-go"
-	"github.com/colbylwilliams/copilot-go/_examples/events/agent"
+	"github.com/colbylwilliams/copilot-go/_examples/auth/agent"
+	"github.com/colbylwilliams/copilot-go/_examples/auth/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -57,6 +58,16 @@ func realMain() error {
 	router.Use(middleware.Heartbeat("/ping"))
 
 	router.Post("/agent", copilot.AgentHandler(verifier, myagent))
+
+	authHandlers := &auth.AuthHandlers{
+		ClientID: cfg.GitHubAppClientID,
+		Callback: cfg.GitHubAppFQDN + "/auth/callback",
+	}
+
+	router.Route("/auth", func(r chi.Router) {
+		r.Get("/authorization", authHandlers.PreAuth)
+		r.Get("/callback", authHandlers.PostAuth)
+	})
 
 	addr := ":" + cfg.HTTPPort
 	if cfg.IsDevelopment() {
