@@ -40,3 +40,5 @@ go.work.sum
 tmp
 
 __debug_bin*
+
+_examples/update.sh
