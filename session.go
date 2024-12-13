@@ -18,20 +18,20 @@ type SessionInfo struct {
 	Agent       *ReferenceDataGitHubAgent      `json:"agent,omitempty"`
 }
 
-// IsSessionMessage returns true if the message has the role of "user" and
+// IsSessionMessage returns true if the message has the role of "system" and
 // the name of "_session"
 func (msg *Message) IsSessionMessage() bool {
 	return msg.Name == "_session"
 }
 
-// GetSessionMessage returns the message with the role of "user" and the name of
+// GetSessionMessage returns the message with the role of "system" and the name of
 // "_session" which is the message that the github.com chat interface sends to
 // communicate the current url and other context of the chat session
 func (req *Request) GetSessionMessage() *Message {
 	// iterate over the messages in reverse order
 	for i := len(req.Messages) - 1; i >= 0; i-- {
 		msg := req.Messages[i]
-		if msg.Role == ChatRoleUser {
+		if msg.Role == ChatRoleSystem {
 			if msg.IsSessionMessage() {
 				return msg
 			}
@@ -51,22 +51,13 @@ func (req *Request) GetSessionInfo() (*SessionInfo, error) {
 	var repo *ReferenceDataGitHubRepository
 	var agent *ReferenceDataGitHubAgent
 
+	fmt.Println("resolving session info")
+
 	for i := len(req.Messages) - 1; i >= 0; i-- {
 		msg := req.Messages[i]
 
 		switch msg.Role {
 		case ChatRoleUser:
-			// resolve the session url context
-			if msg.IsSessionMessage() {
-				// session = msg
-				if urlData := cetCurrentURLData(msg); urlData != nil {
-					url = urlData
-					if itemRefData, err := resolveRepoItemRef(url.URL); err == nil {
-						item = itemRefData
-					}
-				}
-			}
-
 			if repo == nil {
 				for _, ref := range msg.References {
 					switch data := ref.Data.(type) {
@@ -91,7 +82,29 @@ func (req *Request) GetSessionInfo() (*SessionInfo, error) {
 			}
 
 		case ChatRoleSystem:
-			continue
+			// resolve the session url context
+			if msg.IsSessionMessage() {
+				// session = msg
+				if urlData := cetCurrentURLData(msg); urlData != nil {
+					url = urlData
+					if itemRefData, err := resolveRepoItemRef(url.URL); err == nil {
+						item = itemRefData
+					}
+				}
+			}
+
+			if repo == nil {
+				for _, ref := range msg.References {
+					switch data := ref.Data.(type) {
+					case *ReferenceDataGitHubRepository:
+						repo = data
+					}
+
+					if ref.Type == ReferenceTypeGitHubRepository {
+						repo = ref.Data.(*ReferenceDataGitHubRepository)
+					}
+				}
+			}
 
 		default:
 			continue
@@ -101,19 +114,19 @@ func (req *Request) GetSessionInfo() (*SessionInfo, error) {
 	if url == nil {
 		// this will happen if the user is not using the web (dotcom)
 		// chat interface, or if the current url reference is redacted
-		fmt.Println("warning: no session url context found")
+		fmt.Println(" - no session url context found")
 	}
 
 	if item == nil {
 		// item will ONLY have a value (potentially) if url has a value
 		// and that url value is a valid issue or pull request url
-		fmt.Println("warning: no session item ref context found")
+		fmt.Println(" - no session issue or pull request context found")
 	}
 
 	if repo == nil {
 		// repo may be nil if the user is not interacting in the context
 		// of a repository, or if the current repository reference is redacted
-		fmt.Println("warning: no session repo context found")
+		fmt.Println(" - no session repo context found")
 	}
 
 	if agent == nil {
